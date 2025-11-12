@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Verificação de Autenticidade · Lichtara License</title>
+    <style>
+      :root { --deep:#001F4D; --gold:#FFD85A; --silver:#C0C0C0; --pearl:#E0E8F0;
+              --ok:#18a957; --warn:#cc8a00; --err:#c64545; }
+      body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
+             background:#f7f9fc; color:#1d2433; margin:0; padding:2rem; }
+      .wrap { max-width:1000px; margin:0 auto; background:#fff; border-radius:18px;
+              box-shadow:0 12px 30px rgba(0,31,77,.12); overflow:hidden; }
+      header { background:linear-gradient(90deg,var(--deep),#213b72); color:#fff; padding:1.25rem 1.6rem; }
+      header h1 { font-weight:800; font-size:1.4rem; margin:0; letter-spacing:.2px; }
+      header small { opacity:.9; }
+      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+              gap:1.1rem; padding:1.5rem; }
+      .card { border:1px solid #e6ebf2; border-radius:12px; padding:1rem; background:#fff; }
+      .title { display:flex; align-items:center; gap:.5rem; font-weight:700; color:var(--deep); margin:0 0 .5rem; }
+      .pill { display:inline-flex; align-items:center; gap:.4rem; font-size:.85rem; font-weight:700;
+              border-radius:999px; padding:.25rem .7rem; }
+      .ok { background:#e8f7ef; color:var(--ok); border:1px solid #bde5cd; }
+      .warn { background:#fff6e0; color:var(--warn); border:1px solid #ffe1a3; }
+      .err { background:#fdecec; color:var(--err); border:1px solid #f6bcbc; }
+      .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+              font-size:.85rem; background:#f4f7fb; border:1px dashed #e1e7f0; padding:.45rem .6rem;
+              border-radius:8px; word-break:break-all; }
+      .row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin:.4rem 0; }
+      footer { padding:1rem 1.5rem; border-top:1px solid #e6ebf2; background:linear-gradient(90deg,#f8fafc,#fbfbfe); }
+      .actions { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.6rem; }
+      button, a.btn { appearance:none; border:1px solid #e0e6f0; background:#fff; color:#1d2433; border-radius:10px;
+                      padding:.5rem .85rem; font-weight:700; cursor:pointer; text-decoration:none; }
+      a.btn.gold { background:var(--gold); border-color:#f6cc54; color:#1a1a1a; }
+      .imgbox { display:flex; align-items:center; justify-content:center; background:#fff;
+                border:1px solid #e6ebf2; border-radius:12px; min-height:220px; }
+      .imgbox img { max-width:100%; max-height:220px; object-fit:contain; }
+      .hint { font-size:.9rem; color:#4e5d7a; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Verificação de Autenticidade · Lichtara License</h1>
+        <small>Símbolo Lichtara — Campo Lumórico</small>
+      </header>
+
+      <div class="grid">
+        <div class="card">
+          <p class="title">📦 Publicação</p>
+          <div class="row"><b>Imagem publicada</b><span id="pubStatus" class="pill warn">checando…</span></div>
+          <div class="imgbox"><img id="preview" alt="Pré-visualização"/></div>
+          <div class="row"><b>URL</b><span id="imgUrl" class="mono"></span></div>
+          <p class="hint">Confirma se a imagem está acessível e atual.</p>
+        </div>
+
+        <div class="card">
+          <p class="title">📜 Manifesto</p>
+          <div class="row"><b>Acesso</b><span id="manStatus" class="pill warn">checando…</span></div>
+          <div class="row"><b>License esperada</b><span class="mono" id="expectedLicense"></span></div>
+          <div class="row"><b>License no manifesto</b><span class="mono" id="manifestLicense"></span></div>
+          <p class="hint">Compara a licença declarada com a referência Lichtara.</p>
+        </div>
+
+        <div class="card">
+          <p class="title">🔏 QR lumórico (metadados)</p>
+          <div class="row"><b>Campos encontrados</b><span id="metaStatus" class="pill warn">checando…</span></div>
+          <div class="row"><b>ManifestURL</b><span class="mono" id="metaManifest"></span></div>
+          <div class="row"><b>License</b><span class="mono" id="metaLicense"></span></div>
+          <div class="row"><b>ChecksumSHA256</b><span class="mono" id="metaChecksum"></span></div>
+          <p class="hint">Lê os blocos tEXt/iTXt do PNG e confirma se estão alinhados ao manifesto.</p>
+        </div>
+
+        <div class="card">
+          <p class="title">✅ Resultado</p>
+          <div class="row"><b>Veredito</b><span id="finalStatus" class="pill warn">aguardando…</span></div>
+          <div class="row"><b>Resumo</b></div>
+          <div id="summary" class="mono"></div>
+          <p class="hint">Todos os semáforos verdes ⇒ arte verificada pela Lichtara License.</p>
+        </div>
+      </div>
+
+      <footer>
+        <div class="actions">
+          <a class="btn gold" id="btnRun" href="#">Executar verificação</a>
+          <a class="btn" id="btnDl" href="#" download="relatorio-verificacao.json">Baixar relatório</a>
+          <a class="btn" target="_blank" id="linkManifest">Manifesto</a>
+          <a class="btn" target="_blank" id="linkImage">Imagem</a>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      const CONFIG = {
+        imageUrl: "/apps/app-web/public/media/lichara-symbol.png".replace("/apps/app-web/public",""),
+        manifestUrl: "/data/lichara-symbol.holo.yaml",
+        expectedLicense: "https://doi.org/10.5281/zenodo.16762058"
+      };
+      const $ = (id)=>document.getElementById(id);
+      function setPill(el,type,text){ el.className="pill "+type; el.textContent=text; }
+      async function hashSHA256(buffer){
+        const digest = await crypto.subtle.digest("SHA-256", buffer);
+        return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,"0")).join("");
+      }
+      async function readPNGTextChunks(buffer){
+        const dv = new DataView(buffer);
+        const sig = [137,80,78,71,13,10,26,10];
+        for(let i=0;i<8;i++) if(dv.getUint8(i)!==sig[i]) return {};
+        let off=8, meta={};
+        while(off < dv.byteLength){
+          const len = dv.getUint32(off); off+=4;
+          const type = String.fromCharCode(dv.getUint8(off),dv.getUint8(off+1),dv.getUint8(off+2),dv.getUint8(off+3)); off+=4;
+          if(type==="tEXt"){
+            const data = new Uint8Array(buffer,off,len);
+            const zero = data.indexOf(0);
+            const key = new TextDecoder().decode(data.slice(0,zero));
+            const val = new TextDecoder().decode(data.slice(zero+1));
+            meta[key]=val;
+          } else if(type==="iTXt"){
+            const data = new Uint8Array(buffer,off,len);
+            let p=0;
+            const readZ=()=>{ const z=data.indexOf(0,p); const s=new TextDecoder().decode(data.slice(p,z)); p=z+1; return s; };
+            const key = readZ(); p+=2; // skip flags/method
+            readZ(); readZ(); // lang + translated
+            const text = new TextDecoder().decode(data.slice(p));
+            meta[key]=text;
+          }
+          off += len + 4;
+          if(type==="IEND") break;
+        }
+        return meta;
+      }
+      async function fetchManifestLicense(url){
+        const res = await fetch(url,{cache:"no-store"});
+        if(!res.ok) throw new Error("Manifesto inacessível");
+        const txt = await res.text();
+        const m = txt.match(/license:\s*["']?([^\s"']+)/i);
+        return {text:txt, license: m?m[1].trim():null};
+      }
+      async function run(){
+        const report = {timestamp:new Date().toISOString(), imageUrl:CONFIG.imageUrl,
+                        manifestUrl:CONFIG.manifestUrl, expectedLicense:CONFIG.expectedLicense, checks:{}};
+        $("linkManifest").href = CONFIG.manifestUrl;
+        $("linkImage").href = CONFIG.imageUrl;
+        $("imgUrl").textContent = CONFIG.imageUrl;
+        try{
+          const imgRes = await fetch(CONFIG.imageUrl,{cache:"no-store"});
+          if(!imgRes.ok) throw new Error("HTTP "+imgRes.status);
+          const buf = await imgRes.arrayBuffer();
+          report.imageChecksum = await hashSHA256(buf);
+          setPill($("pubStatus"),"ok","imagem acessível");
+          $("preview").src = CONFIG.imageUrl+"?t="+Date.now();
+          report.checks.published=true;
+        }catch(e){
+          setPill($("pubStatus"),"err","imagem inacessível");
+          report.checks.published=false;
+        }
+        try{
+          const {license} = await fetchManifestLicense(CONFIG.manifestUrl);
+          $("manifestLicense").textContent = license || "(não encontrado)";
+          $("expectedLicense").textContent = CONFIG.expectedLicense;
+          const ok = license && license === CONFIG.expectedLicense;
+          setPill($("manStatus"), ok?"ok":"err", ok?"manifesto OK":"license divergente");
+          report.checks.manifest = !!ok;
+        }catch(e){
+          setPill($("manStatus"),"err","manifesto inacessível");
+          $("manifestLicense").textContent = "(erro)";
+          report.checks.manifest=false;
+        }
+        try{
+          const imgRes = await fetch(CONFIG.imageUrl,{cache:"no-store"});
+          const buf = await imgRes.arrayBuffer();
+          const meta = await readPNGTextChunks(buf);
+          $("metaManifest").textContent = meta.ManifestURL || "(ausente)";
+          $("metaLicense").textContent  = meta.License || "(ausente)";
+          $("metaChecksum").textContent = meta.ChecksumSHA256 || "(ausente)";
+          const manifestMatch = !!meta.ManifestURL && meta.ManifestURL.endsWith(CONFIG.manifestUrl);
+          const licenseMatch  = !!meta.License && meta.License === CONFIG.expectedLicense;
+          const checksumOk    = !!meta.ChecksumSHA256;
+          const ok = manifestMatch && licenseMatch && checksumOk;
+          setPill($("metaStatus"), ok?"ok":"warn", ok?"metadados OK":"metadados incompletos");
+          report.checks.metadata = ok;
+          report.pngMeta = meta;
+        }catch(e){
+          setPill($("metaStatus"),"err","falha ao ler PNG");
+          report.checks.metadata=false;
+        }
+        const final = report.checks.published && report.checks.manifest && report.checks.metadata;
+        setPill($("finalStatus"), final?"ok":"err", final?"VERIFICADO · Lichtara License":"FALHA · revisar");
+        $("summary").textContent = JSON.stringify(report,null,2);
+        const blob = new Blob([JSON.stringify(report,null,2)],{type:"application/json"});
+        $("btnDl").href = URL.createObjectURL(blob);
+      }
+      $("btnRun").addEventListener("click",e=>{e.preventDefault();run();});
+      window.addEventListener("load",run);
+    </script>
+  </body>
+</html>

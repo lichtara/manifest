@@ -1,0 +1,84 @@
+# ============================================================
+# Workflow: Validate & Publish · Lichtara-Diffusion
+# ============================================================
+# 1. Gera o símbolo via generate_symbol.py
+# 2. Valida manifesto/licença/metadados
+# 3. Publica a imagem validada em GitHub Pages
+# ============================================================
+
+name: Validate & Publish Symbol
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "lichtara-diffusion/**"
+  workflow_dispatch:
+
+jobs:
+  build-validate-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install diffusers transformers torch torchvision accelerate pillow pyyaml requests
+
+      - name: 🎨 Generate symbol
+        run: |
+          python lichtara-diffusion/pipelines/generate_symbol.py
+
+      - name: 🔍 Validate metadata integrity
+        run: |
+          python - <<'PYCODE'
+          import yaml, hashlib, sys
+          from PIL import Image
+
+          manifest_path = "lichtara-diffusion/manifests/lichara-symbol.holo.yaml"
+          img_path = "lichtara-diffusion/outputs/symbol_lumoric.png"
+
+          with open(manifest_path, encoding="utf-8") as f:
+              manifest = yaml.safe_load(f)
+
+          expected_url = "https://lichtara.com/data/lichara-symbol.holo.yaml"
+          expected_license = manifest.get("metadata", {}).get("license", "")
+
+          img = Image.open(img_path)
+          meta = img.text
+          errors = []
+
+          if meta.get("ManifestURL") != expected_url:
+              errors.append("ManifestURL incorreto ou ausente")
+          if meta.get("License") != expected_license:
+              errors.append("License incorreta ou ausente")
+
+          with open(img_path, "rb") as f:
+              checksum = hashlib.sha256(f.read()).hexdigest()
+          if meta.get("ChecksumSHA256") != checksum:
+              errors.append("Checksum não confere")
+
+          if errors:
+              for e in errors:
+                  print("❌", e)
+              sys.exit(1)
+          else:
+              print("✅ Metadados validados com sucesso")
+          PYCODE
+
+      - name: 🚀 Publish to GitHub Pages
+        if: ${{ success() }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: lichtara-diffusion/outputs
+          destination_dir: images
+          keep_files: true
+          commit_message: "🔄 Publicação automática: símbolo validado Lichtara"

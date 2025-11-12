@@ -1,0 +1,75 @@
+# ============================================================
+# Workflow: Render Harmonics · Lichtara-Diffusion
+# ============================================================
+# Gera variações harmônicas (azul, dourado, prateado)
+# a partir do símbolo principal validado.
+# ============================================================
+
+name: Render Harmonics
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "lichtara-diffusion/pipelines/render_harmonics.yaml"
+
+jobs:
+  render-harmonics:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install pillow
+
+      - name: Download validated symbol
+        run: |
+          mkdir -p lichtara-diffusion/outputs
+          curl -L https://lichtara.com/images/lichara-symbol.png -o lichtara-diffusion/outputs/symbol_base.png
+
+      - name: Generate harmonic variations
+        run: |
+          python - <<'PYCODE'
+          from PIL import Image
+          import os, json
+
+          base_path = "lichtara-diffusion/outputs/symbol_base.png"
+          image = Image.open(base_path).convert("RGBA")
+
+          def save_variant(img, name, tint):
+              layer = Image.new("RGBA", img.size, (*tint, 80))
+              out = Image.alpha_composite(img, layer)
+              path = f"lichtara-diffusion/outputs/symbol_{name}.png"
+              out.save(path)
+              print(f"✅ Variante {name} gerada: {path}")
+
+          variants = {
+              "azul-profundo": (0, 31, 77),
+              "dourado-ativador": (255, 216, 90),
+              "prateado-vibrante": (192, 192, 192),
+          }
+
+          for name, color in variants.items():
+              save_variant(image, name, color)
+
+          log = {
+              "base_image": base_path,
+              "variants": list(variants.keys())
+          }
+          with open("lichtara-diffusion/outputs/harmonics_log.json", "w", encoding="utf-8") as f:
+              json.dump(log, f, indent=2, ensure_ascii=False)
+          PYCODE
+
+      - name: Upload harmonic variants
+        uses: actions/upload-artifact@v4
+        with:
+          name: lichtara-harmonics
+          path: lichtara-diffusion/outputs/
