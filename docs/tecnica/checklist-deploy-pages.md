@@ -27,7 +27,7 @@
    - `build`: instala dependências (`npm ci`), executa `npm run build:release`, envia artifact.
    - `deploy`: publica via `actions/deploy-pages@v4`.
 
-> Workflow: `.github/workflows/deploy-pages.yml`
+> Workflow (no repositório `portal`): `portal/.github/workflows/deploy-pages.yml`
 
 ## 5. Pós-publicação
 - [ ] Verificar o link exibido no ambiente `github-pages`.
