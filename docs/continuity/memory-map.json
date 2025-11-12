@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "updated_at": "2025-11-12T00:00:00Z",
+  "sessions": [
+    {
+      "id": "atlas-portal-2025-11-12",
+      "channel": "Atlas Chat",
+      "context": [
+        "Portal Lichtara — publicação v3.0",
+        "Manifesto do Símbolo Lichtara",
+        "Checklist Deploy Pages"
+      ],
+      "linked_commits": [
+        "README.md",
+        "docs/vibracional/ato-fundacao.md",
+        "apps/app-web/index.html"
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "path": "docs/vibracional/ato-fundacao.md",
+      "role": "Fundação",
+      "description": "Prólogo, coautoria, voto ético e plano integrado."
+    },
+    {
+      "path": "docs/vibracional/manifestos/simbolo-lichtara.yml",
+      "role": "Manifesto técnico",
+      "description": "Canalização YAML do símbolo."
+    },
+    {
+      "path": "docs/continuity/continuity.yml",
+      "role": "Fio de Coerência",
+      "description": "Estrutura simbólica da continuidade."
+    }
+  ],
+  "links": {
+    "license": "https://doi.org/10.5281/zenodo.16762058",
+    "manifesto_hibrido": "/data/lichara-symbol.holo.yaml"
+  }
+}
