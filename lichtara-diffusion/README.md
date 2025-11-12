@@ -7,10 +7,11 @@ Este módulo concentra manifestos, scripts e workflows responsáveis por traduzi
 ```
 lichtara-diffusion/
 ├─ manifests/                # Manifestos híbridos (YAML/JSON-LD) usados pelos motores
-│    └─ lichtara-symbol.holo.yaml
+│    ├─ README.md
+│    └─ (copiar versão atual do símbolo aqui)
 ├─ pipelines/                # Scripts Python, configs Hugging Face, workflows Sora/Vorax
 │    ├─ generate_symbol.py
-│    └─ render_harmonics.yaml
+│    └─ (render_harmonics.yaml, etc.)
 ├─ outputs/                  # Arte gerada automaticamente (versão mais recente)
 │    └─ symbol-latest.png
 └─ README.md                 # Este arquivo
