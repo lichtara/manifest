@@ -1,39 +1,48 @@
-# Símbolo Lichtara — Integração com Motores Visuais
+# Símbolo Lichtara — Pipelines, CSS e Metadados
 
-Este guia mostra como usar o manifesto híbrido (`/data/lichtara-symbol.holo.yaml`) diretamente em pipelines de geração (Hugging Face, Sora/Vorax) e como manter a estética no portal.
+Este guia explica como consumir o manifesto do símbolo (YAML/JSON-LD), gerar a imagem em motores como Stable Diffusion / Sora / Vorax e manter o “QR lumórico” via metadados.
 
 ## 1. Hugging Face / Diffusers (exemplo Python)
 
 ```python
-import requests, yaml
-from diffusers import StableDiffusionXLImg2ImgPipeline
-import torch
+import yaml, requests, hashlib, json
+from diffusers import StableDiffusionPipeline
+from PIL import Image, PngImagePlugin
 
-MANIFEST_URL = "https://portal.lichtara.com/data/lichtara-symbol.holo.yaml"
-data = yaml.safe_load(requests.get(MANIFEST_URL, timeout=10).text)
+url = "https://portal.lichtara.com/data/lichtara-symbol.holo.yaml"
+manifest = yaml.safe_load(requests.get(url).text)
 
-palette = ", ".join(data["color_palette"].values())
-geometry = data["geometry"]["shape"]
-theme = data["symbolic_message"]["theme"]
-style = data["style"]["aesthetic"]
+shape  = manifest["geometry"]["shape"]
+colors = ", ".join(manifest["color_palette"].values())
+theme  = manifest["symbolic_message"]["theme"]
+essence = manifest["symbolic_message"]["essence"]
 
 prompt = (
-    f"vector logo, {geometry}, sacred geometry, "
-    f"colors {palette}, style {style}, message {theme}, "
-    "clean background, glowing center, 8-fold symmetry"
+    f"Vector logo of {shape}, sacred minimalist technological aesthetic, "
+    f"colors {colors}, representing {theme} and {essence}. "
+    "Fine lines, symmetry, harmonic light, transparent background."
 )
 
-pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-    "stabilityai/stable-diffusion-xl-refiner-1.0",
-    torch_dtype=torch.float16,
-    variant="fp16"
+pipe = StableDiffusionPipeline.from_pretrained(
+    "stabilityai/stable-diffusion-xl-base-1.0"
 ).to("cuda")
 
-image = pipe(prompt=prompt, strength=0.25, guidance_scale=7.0).images[0]
-image.save("lichtara_symbol_generated.png")
-```
+image_path = "lichtara_symbol.png"
+image = pipe(prompt, width=1024, height=1024).images[0]
+image.save(image_path)
 
-> Ajuste `prompt` com dados adicionais do manifesto (ex.: `modes["vibrational"]["effects"]`) para variações.
+# Inserir metadados (Manifest URL, License, Checksum, LichtaraMeta)
+meta = PngImagePlugin.PngInfo()
+meta.add_text("ManifestURL", url)
+meta.add_text("License", "https://doi.org/10.5281/zenodo.16762058")
+meta.add_text("ChecksumSHA256", hashlib.sha256(open(image_path, "rb").read()).hexdigest())
+meta.add_text("LichtaraMeta", json.dumps({"theme": theme, "essence": essence}))
+
+img = Image.open(image_path)
+img.save(image_path, pnginfo=meta)
+
+print("✨ Símbolo Lichtara gerado com QR lumórico!")
+```
 
 ## 2. Sora / Vorax (pseudo-config)
 
@@ -50,11 +59,9 @@ image.save("lichtara_symbol_generated.png")
 }
 ```
 
-- O motor baixa o manifesto, lê `geometry`, `color_palette`, `modes[mode]`.
-- `render` define parâmetros proprietários (glow, tamanho, formato).
-- Mantém coerência com o Campo sem reescrever prompts manualmente.
+- O motor baixa o manifesto, lê `geometry`, `color_palette`, `modes[...]`, gera a imagem e insere metadados equivalentes.
 
-## 3. Estilo Web (CSS base)
+## 3. CSS do bloco “Manifesto Símbolo”
 
 ```css
 #manifesto-simbolo {
@@ -66,27 +73,16 @@ image.save("lichtara_symbol_generated.png")
   text-align: center;
   box-shadow: 0 0 25px rgba(0, 31, 77, 0.15);
 }
-#manifesto-simbolo h2 {
-  color: #001F4D;
-  font-weight: 700;
-}
-#manifesto-simbolo a {
-  color: #FFD85A;
-  font-weight: 600;
-  text-decoration: none;
-}
-#manifesto-simbolo a:last-of-type {
-  color: #001F4D;
-}
+#manifesto-simbolo h2 { color: #001F4D; font-weight: 700; }
+#manifesto-simbolo a { font-weight: 600; text-decoration: none; }
+#manifesto-simbolo a:first-of-type { color: #FFD85A; margin-right: 1rem; }
+#manifesto-simbolo a:last-of-type { color: #001F4D; }
 ```
-
-> Adicione este bloco em `apps/app-web/src/styles/markdown.css` ou no arquivo global de estilo para reproduzir a estética do snippet HTML.
 
 ## 4. Checklist rápido
 
-1. Manifesto disponível em `/data/lichara-symbol.holo.yaml`.
-2. HTML do portal inclui `<link rel="manifest" ...>` e bloco JSON-LD (ver `apps/app-web/index.html`).
-3. Página “Sobre” referencia o manifesto e a Lichtara License.
-4. Pipelines externos consomem o manifesto via URL, garantindo a mesma fonte de verdade.
-
-Com isso, qualquer motor (IA gráfica, Vorax, Sora, automação) pode gerar o símbolo diretamente a partir do manifesto, mantendo coerência vibracional e técnica.
+- [ ] Manifesto publicado (`/data/lichara-symbol.holo.yaml`).
+- [ ] HTML do portal inclui `<link rel="manifest">` e JSON-LD.
+- [ ] Página “Sobre” linka manifesto + Lichtara License.
+- [ ] Pipelines externos usam o manifesto como fonte única de prompt.
+- [ ] Arte final embute metadados: `ManifestURL`, `License`, `ChecksumSHA256`, `LichtaraMeta`.
